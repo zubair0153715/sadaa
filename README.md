@@ -91,18 +91,37 @@ the `/call` page.
 
 ### 2. WhatsApp call — free, internet only
 Customers already call businesses free on WhatsApp. Sadaa's `/call` page has
-a WhatsApp call button (wa.me link). WhatsApp Business voice calling via
-Meta's API exists but needs business verification and is not a free
-do-it-yourself PSTN replacement — the wa.me click-to-call path is the free
-part, and it works today.
+a WhatsApp call button (wa.me link) — works today with a normal Pakistani
+WhatsApp Business number, zero setup. The **WhatsApp Business Calling API**
+(launched 15 Jul 2025, verified against Meta docs) goes further:
+**user-initiated calls are free for both sides**, and inbound calls can
+terminate into Sadaa's voice agent via WebRTC/SIP. The gates: it needs a
+Cloud API number (the WhatsApp Business *app* number does not support
+calling), calling switched on in number settings, a Meta Business Account +
+WABA, and BSP write-ups report a messaging-tier gate (~2,000
+business-initiated conversations/24h) before calling can be enabled
+(reported, not directly verified). Business-initiated outbound calls are
+billed per minute; a +92 number is NOT on the outbound exclusion list
+(US, Canada, Egypt, Vietnam, Nigeria are).
 
 ### 3. Free SIP address — free, internet only (setup needed)
 Anyone with a SIP app (e.g. Linphone, free) can dial a SIP address such as
-`sip:agent@sadaa.example` free over the internet — no PSTN, no per-minute
-charge. A free SIP account is the owner's one-time signup (no card on the
-free tiers that offer it); Sadaa's browser client can then answer SIP calls
-via JsSIP. Exact provider + address + dial-in steps: see below once the
-live SIP account is created.
+`sip:username@linphone.org` free over the internet — no PSTN, no per-minute
+charge. Verified options (Nov 2026):
+- **Linphone** — free SIP account, no card: install the app → Create account
+  → address `username@linphone.org`; SIP-to-SIP calls free. Likely works
+  from Pakistan (no country restriction found; not live-tested from a PK
+  network). Signup: `subscribe.linphone.org`.
+- **OnSIP** — official free page still live (`user@company.onsip.com`, up to
+  100 users), but 2026 pricing trackers say the free plan was discontinued —
+  verify at signup.
+- **Callcentric** — free SIP URI (`1777XXXXXXX@in.callcentric.com`), but a
+  real diallable number costs from ~$2.95/mo.
+- **sipgate** — dead end: free tier ended Sep 2026.
+The catch: a random customer will not have a SIP app installed. SIP is a
+good *secondary* door for technical callers, not the main one. To answer SIP
+calls Sadaa needs a SIP client registered to that address on its server —
+see `docs/free-inbound-setup.md`.
 
 ### What is NOT free (do not be fooled)
 - **Google Voice** — US-only, needs US verification; not usable from Pakistan.
@@ -113,10 +132,17 @@ live SIP account is created.
 - **Any "free" PSTN number** — if it terminates to a real mobile/landline,
   someone is paying. If nobody is paying, it is not PSTN.
 
+**Recommended free inbound route:** the `/call` page (works now) + the
+WhatsApp button (works now) as the two doors, with an optional Linphone SIP
+address as a third door. For the full room-based path, create a free
+**LiveKit Cloud** account (Build plan, $0, no card — 5,000 WebRTC minutes +
+1,000 agent-session minutes/month, hard cap, never bills) and follow
+`docs/free-inbound-setup.md`.
+
 **To go live free:** (1) publish Sadaa's `/call` page and share the link —
-works immediately; (2) add the WhatsApp button (already on the page);
-(3) create a free SIP account and put the address on the page (owner's
-signup step — see `docs/free-sip-setup.md` when added).
+works immediately; (2) the WhatsApp button is already on the page;
+(3) optionally create a free Linphone SIP account and publish the address
+(owner's signup step — see `docs/free-inbound-setup.md`).
 
 ## Built on the shoulders of
 
