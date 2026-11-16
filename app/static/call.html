@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Call Sadaa — free, in your browser</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #16213a; color: #fff; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+  h1 { font-size: 34px; margin: 0 0 6px; }
+  h1 span { color: #4fc3a1; }
+  .lead { color: #cdd8e8; font-size: 17px; line-height: 1.5; }
+  .card { background: #fff; color: #1c2530; border-radius: 14px; padding: 22px; margin: 22px 0; }
+  .card h2 { margin-top: 0; }
+  .big { font-size: 19px; background: #0d7a5f; color: #fff; border: none; border-radius: 10px; padding: 16px 26px; cursor: pointer; width: 100%; }
+  .big:disabled { background: #667085; }
+  .ghost { background: #22304f; color: #fff; border: 1px solid #4a5a78; border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+  select, input { width: 100%; padding: 10px; border: 1px solid #ccd4de; border-radius: 8px; margin: 4px 0 12px; font-size: 15px; }
+  .turn { padding: 8px 10px; border-radius: 8px; margin: 6px 0; font-size: 14px; }
+  .turn.caller { background: #e8f0fe; }
+  .turn.agent { background: #e6f7f1; }
+  .turn.system { background: #f0f0f0; color: #555; font-size: 13px; }
+  #transcript { max-height: 320px; overflow-y: auto; }
+  .muted { color: #667085; font-size: 14px; }
+  .ways li { margin: 8px 0; line-height: 1.5; }
+  a { color: #4fc3a1; }
+  .card a { color: #0d7a5f; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Call Sadaa <span>صدا</span></h1>
+  <p class="lead">Talk to a real voice agent — free, right here in your browser. No app to install, no account, no phone number. Your microphone is the phone line.</p>
+
+  <div class="card">
+    <h2>Call now — free</h2>
+    <label>Who do you want to speak to?</label>
+    <select id="agent-select"><option value="">Loading agents…</option></select>
+    <button class="big" id="call-btn" onclick="startCall()">📞 Call now — free</button>
+    <p id="status" class="muted"></p>
+    <div id="transcript"></div>
+    <div id="during" style="display:none">
+      <input id="typed" placeholder="Type here if your mic is off — the agent still answers by voice">
+      <p><button class="ghost" onclick="sendTyped()">Send</button>
+      <button class="ghost" onclick="endCall()">End call</button></p>
+    </div>
+    <p class="muted">Works best in Chrome or Edge (microphone + speech recognition). The agent speaks with your device's built-in voices — no audio is uploaded anywhere.</p>
+  </div>
+
+  <div class="card">
+    <h2>Other free ways to reach us</h2>
+    <ul class="ways">
+      <li><b>WhatsApp call (free):</b> call us on WhatsApp — internet call, no charges.
+        <a href="https://wa.me/923116925020?text=Hi%20Sadaa%2C%20I%27d%20like%20to%20talk%20to%20an%20agent." target="_blank" rel="noopener">Chat / call on WhatsApp →</a></li>
+      <li><b>SIP dial-in (free, internet only):</b> <span id="sip-line">free SIP address setup is in progress — see the README's “Free inbound calling” section for the live address.</span></li>
+      <li><b>Real phone call (not free):</b> calling a mobile/landline number always costs someone — a PSTN number + per-minute charges. Sadaa will add a real number when Twilio is connected (owner's account + credits). Until then, the browser call above is the free route.</li>
+    </ul>
+  </div>
+
+  <p class="lead" style="font-size:14px">Sadaa Call Centre Agency · Larkana, Pakistan · <a href="/">Agency dashboard →</a></p>
+</div>
+
+<script src="/static/voice.js"></script>
+<script>
+let callId = null, agent = null, active = false;
+const $ = (id) => document.getElementById(id);
+
+async function loadAgents() {
+  const d = await (await fetch("/api/agents")).json();
+  const sel = $("agent-select");
+  sel.innerHTML = (d.agents || []).map(a =>
+    `<option value="${a.id}">${a.name} — ${a.role}</option>`).join("");
+}
+
+function addTurn(who, text) {
+  const box = $("transcript");
+  const div = document.createElement("div");
+  div.className = "turn " + who;
+  div.textContent = who + ": " + text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function startCall() {
+  if (active) return;
+  const res = await (await fetch("/api/calls/start", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ agent_id: $("agent-select").value, direction: "inbound", contact_name: "Web caller" }) })).json();
+  if (!res.ok) { $("status").textContent = "Could not start the call."; return; }
+  callId = res.call_id; agent = res.agent; active = true;
+  $("call-btn").disabled = true;
+  $("call-btn").textContent = "Calling…";
+  $("status").textContent = "Ringing…";
+  $("during").style.display = "block";
+  setTimeout(async () => {
+    await fetch(`/api/calls/${callId}/state`, { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: "ACTIVE" }) });
+    $("status").textContent = "Connected — speak now, or type below.";
+    $("call-btn").textContent = "On call";
+    addTurn("agent", agent.greeting);
+    Voice.speak(agent.greeting, agent);
+    if (Voice.supported) {
+      Voice.startListening(onSpeech, () => {});
+    } else {
+      $("status").textContent += " (Mic not supported in this browser — type below.)";
+    }
+  }, 1200);
+}
+
+async function onSpeech(text) {
+  if (!active) return;
+  addTurn("caller", text);
+  const res = await (await fetch(`/api/calls/${callId}/turn`, { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) })).json();
+  if (res.reply) {
+    addTurn("agent", res.reply);
+    Voice.speak(res.reply, agent, () => { if (res.end_call) endCall(); });
+  }
+}
+
+async function sendTyped() {
+  const v = $("typed").value.trim();
+  if (!v) return;
+  $("typed").value = "";
+  await onSpeech(v);
+}
+
+async function endCall() {
+  if (!active) return;
+  active = false;
+  Voice.stopListening();
+  Voice.stopSpeaking();
+  await fetch(`/api/calls/${callId}/end`, { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ outcome: "ended", csat: 0 }) });
+  $("status").textContent = "Call ended. Thank you for calling Sadaa!";
+  $("call-btn").disabled = false;
+  $("call-btn").textContent = "📞 Call now — free";
+  $("during").style.display = "none";
+}
+
+loadAgents();
+</script>
+</body>
+</html>

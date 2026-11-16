@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sadaa — Call Centre Agency</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f6f9; color: #1c2530; }
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 230px; background: #16213a; color: #fff; padding: 20px 0; flex-shrink: 0; }
+  .sidebar h1 { font-size: 26px; margin: 0 20px 4px; }
+  .sidebar h1 span { color: #4fc3a1; }
+  .sidebar .sub { margin: 0 20px 20px; font-size: 12px; color: #9fb0c9; }
+  .nav button { display: block; width: 100%; text-align: left; background: none; border: none; color: #cdd8e8; padding: 11px 20px; font-size: 15px; cursor: pointer; }
+  .nav button:hover { background: #22304f; }
+  .nav button.active { background: #4fc3a1; color: #0f1a2b; font-weight: 600; }
+  .main { flex: 1; padding: 22px 28px; max-width: 1100px; }
+  .banner { background: #fff7e0; border: 1px solid #e8c96a; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 14px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  h2 { margin-top: 0; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .kpi { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .kpi b { font-size: 26px; display: block; }
+  .kpi span { color: #667085; font-size: 13px; }
+  .card { background: #fff; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .agent-card h3 { margin: 0 0 6px; }
+  .tag { background: #e6f7f1; color: #0d7a5f; border-radius: 20px; padding: 2px 10px; font-size: 12px; }
+  .muted { color: #667085; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #edf0f3; font-size: 14px; }
+  th { background: #f0f3f7; }
+  button { background: #16213a; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 14px; margin-right: 6px; }
+  button:hover { background: #22304f; }
+  button.green { background: #0d7a5f; }
+  button.red { background: #b3261e; }
+  input, select, textarea { width: 100%; padding: 9px 10px; border: 1px solid #ccd4de; border-radius: 6px; margin: 4px 0 10px; font-size: 14px; }
+  label { font-size: 13px; font-weight: 600; color: #44506a; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .turn { padding: 8px 10px; border-radius: 8px; margin: 6px 0; font-size: 14px; }
+  .turn.caller { background: #e8f0fe; }
+  .turn.agent { background: #e6f7f1; }
+  .turn.system { background: #f0f0f0; color: #555; font-size: 13px; }
+  .turn.tool { background: #fff3e0; font-size: 13px; }
+  #live-transcript { max-height: 380px; overflow-y: auto; background: #fff; border: 1px solid #dfe4ea; border-radius: 8px; padding: 10px; }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 10; }
+  .modal-box { background: #fff; max-width: 700px; margin: 60px auto; padding: 22px; border-radius: 12px; max-height: 80vh; overflow-y: auto; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; }
+  .bar-row span { width: 100px; }
+  .bar { height: 18px; background: #4fc3a1; border-radius: 4px; min-width: 4px; }
+  #voice-warning { display: none; background: #fdecea; border: 1px solid #f5b5b0; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+  details { margin: 8px 0; font-size: 14px; }
+  summary { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h1>Sadaa <span>صدا</span></h1>
+    <p class="sub">Call Centre Agency · AI voice agents</p>
+    <nav class="nav">
+      <button data-view="dashboard" class="active" onclick="show('dashboard')">Dashboard</button>
+      <button data-view="agents" onclick="show('agents')">Voice Agents</button>
+      <button data-view="live" onclick="show('live')">Live Calls</button>
+      <button data-view="dialer" onclick="show('dialer')">Campaign Dialer</button>
+      <button data-view="history" onclick="show('history')">Call History</button>
+      <button data-view="leads" onclick="show('leads')">Leads (CRM)</button>
+      <button data-view="tickets" onclick="show('tickets')">Support Tickets</button>
+      <button data-view="analytics" onclick="show('analytics')">Analytics</button>
+    </nav>
+    <p class="sub" style="margin-top:30px">Free inbound: <a href="/call" style="color:#4fc3a1">Call us — free in your browser</a></p>
+  </aside>
+
+  <main class="main">
+    <div class="banner"><b>Honest note:</b> browser voice calls here are free — mic + speakers + internet, no phone line. Real PSTN calls to mobile/landline numbers need Twilio (your own account + credits). Sadaa never fakes a phone call. <a href="/call">Free inbound calling — how it works</a></div>
+    <div id="voice-warning">Your browser does not support SpeechRecognition (voice input). Use Chrome or Edge for full voice calls — or type replies in the text box and the agent still answers by voice.</div>
+
+    <section class="view active" id="view-dashboard">
+      <h2>Dashboard</h2>
+      <div class="kpis">
+        <div class="kpi"><b id="kpi-calls">0</b><span>Total calls</span></div>
+        <div class="kpi"><b id="kpi-resolved">—</b><span>Resolution rate</span></div>
+        <div class="kpi"><b id="kpi-duration">—</b><span>Avg duration</span></div>
+        <div class="kpi"><b id="kpi-csat">—</b><span>Avg CSAT</span></div>
+        <div class="kpi"><b id="kpi-tickets">0</b><span>Open tickets</span></div>
+        <div class="kpi"><b id="kpi-leads">0</b><span>New leads</span></div>
+      </div>
+      <h3>Recent calls</h3>
+      <table><thead><tr><th>ID</th><th>Agent</th><th>Dir</th><th>Contact</th><th>State</th><th>Outcome</th><th>Dur</th></tr></thead>
+      <tbody id="recent-calls"></tbody></table>
+    </section>
+
+    <section class="view" id="view-agents">
+      <h2>Voice Agents</h2>
+      <p><button class="green" onclick="newAgent()">+ New agent</button></p>
+      <div id="agent-form" class="card" style="display:none">
+        <h3 id="agent-form-title">New agent</h3>
+        <form onsubmit="saveAgent(event)">
+          <div class="row"><div><label>ID (lowercase, no spaces)</label><input id="af-id"></div>
+          <div><label>Name</label><input id="af-name" required></div>
+          <div><label>Role</label><input id="af-role"></div></div>
+          <label>Persona</label><textarea id="af-persona" rows="2"></textarea>
+          <label>Greeting (first thing the agent says)</label><textarea id="af-greeting" rows="2"></textarea>
+          <label>System prompt</label><textarea id="af-prompt" rows="3"></textarea>
+          <div class="row"><div><label>Voice name hint (browser voice)</label><input id="af-voice-name" placeholder="e.g. Google US English"></div>
+          <div><label>Rate</label><input id="af-voice-rate" type="number" step="0.1" min="0.5" max="2"></div>
+          <div><label>Pitch</label><input id="af-voice-pitch" type="number" step="0.1" min="0" max="2"></div></div>
+          <p class="muted">New agents start with no scripted intents — they answer from their system prompt (and Gemini, if enabled). Edit the agent's intents via the API or copy an existing agent's pattern.</p>
+          <button type="submit" class="green">Save agent</button>
+          <button type="button" onclick="document.getElementById('agent-form').style.display='none'">Cancel</button>
+        </form>
+      </div>
+      <div id="agent-list"></div>
+    </section>
+
+    <section class="view" id="view-live">
+      <h2>Live Calls</h2>
+      <div class="card" id="call-start-panel">
+        <div class="row">
+          <div><label>Agent</label><select id="call-agent"></select></div>
+          <div><label>Direction</label><select id="call-direction"><option value="inbound">Inbound (customer called us)</option><option value="outbound">Outbound (we called them)</option></select></div>
+          <div><label>Contact name (optional)</label><input id="call-contact" placeholder="e.g. Demo Customer"></div>
+        </div>
+        <button class="green" onclick="startCall()">Start call — speak to the agent</button>
+        <p class="muted">The call runs in this browser: your mic is the phone line, the agent answers by voice. Speak any time to interrupt the agent (barge-in).</p>
+      </div>
+      <div class="card" id="call-controls" style="display:none">
+        <p><b>Status:</b> <span id="call-status">—</span> · <span id="mic-state">Mic off</span></p>
+        <p id="mic-note" class="muted"></p>
+        <div id="live-transcript"></div>
+        <div class="row" style="margin-top:10px">
+          <div style="flex:3"><input id="typed-input" placeholder="Type here if your mic is off — the agent still answers by voice"></div>
+          <div><button onclick="sendTyped()">Send</button></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div><label>CSAT at end (1–5)</label><select id="call-csat"><option value="0">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></div>
+          <div style="display:flex;align-items:flex-end;gap:6px">
+            <button class="green" onclick="endCall('resolved')">End — resolved</button>
+            <button onclick="endCall('unresolved')">End — unresolved</button>
+            <button class="red" onclick="endCall('dropped')">End — dropped</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="supervisor-panel" style="display:none">
+        <h3>Supervisor tools</h3>
+        <p class="muted">Listen: the live transcript above is what the supervisor hears. Whisper: a hint only the agent side sees. Barge-in: you take over and speak as the agent.</p>
+        <div class="row">
+          <div style="flex:3"><input id="whisper-input" placeholder="Whisper to the agent, e.g. Offer the 10% pilot discount"></div>
+          <div><button onclick="supervise('whisper')">Whisper</button>
+          <button onclick="supervise('listen')">Listen</button>
+          <button onclick="supervise('barge')">Barge in</button>
+          <button onclick="supervise('resume')">Hand back</button></div>
+        </div>
+        <div id="supervisor-say-box" style="display:none;margin-top:10px">
+          <div class="row"><div style="flex:3"><input id="supervisor-say-input" placeholder="Type what you want to say as the agent…"></div>
+          <div><button onclick="supervisorSay()">Say as agent</button></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-dialer">
+      <h2>Campaign Dialer</h2>
+      <div class="card">
+        <h3>New campaign</h3>
+        <form onsubmit="createCampaign(event)">
+          <div class="row"><div><label>Campaign name</label><input id="campaign-name" required></div>
+          <div><label>Agent</label><select id="campaign-agent"></select></div></div>
+          <label>Contacts — one name per line (demo labels only, no real numbers)</label>
+          <textarea id="campaign-contacts" rows="4" placeholder="Demo Customer One&#10;Demo Customer Two"></textarea>
+          <button type="submit" class="green">Create campaign</button>
+        </form>
+      </div>
+      <div id="campaign-list"></div>
+    </section>
+
+    <section class="view" id="view-history">
+      <h2>Call History &amp; Recordings</h2>
+      <p class="muted">Recordings here are transcripts + TTS replay — Sadaa does not store audio files.</p>
+      <table><thead><tr><th>ID</th><th>Agent</th><th>Dir</th><th>Contact</th><th>Started</th><th>Dur</th><th>Outcome</th><th>CSAT</th><th></th></tr></thead>
+      <tbody id="history-list"></tbody></table>
+    </section>
+
+    <section class="view" id="view-leads">
+      <h2>Leads — CRM Inbox</h2>
+      <p class="muted">Captured live from calls (sales qualifier, receptionist messages, payment promises).</p>
+      <table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Interest</th><th>Source</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody id="leads-list"></tbody></table>
+    </section>
+
+    <section class="view" id="view-tickets">
+      <h2>Support Tickets</h2>
+      <table><thead><tr><th>Ref</th><th>Subject</th><th>Priority</th><th>Status</th><th>Caller</th><th>Date</th><th></th></tr></thead>
+      <tbody id="tickets-list"></tbody></table>
+    </section>
+
+    <section class="view" id="view-analytics">
+      <h2>Analytics</h2>
+      <div class="card"><h3>Calls per day (last 7 days)</h3><div id="analytics-bars"></div></div>
+      <div class="card"><h3>Calls per agent</h3>
+        <table><thead><tr><th>Agent</th><th>Calls</th></tr></thead><tbody id="analytics-agents"></tbody></table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="modal-title">Call</h3>
+    <div id="modal-body"></div>
+    <p><button onclick="closeModal()">Close</button></p>
+  </div>
+</div>
+
+<script src="/static/voice.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
