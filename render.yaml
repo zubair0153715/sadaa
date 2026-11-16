@@ -1,0 +1,13 @@
+# Sadaa — Render Blueprint (free tier, no card).
+# Deploy: Render dashboard → New → Blueprint → pick repo zubair0153715/sadaa.
+# Or: New → Web Service → same repo, build/start commands below.
+services:
+  - type: web
+    name: sadaa
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
